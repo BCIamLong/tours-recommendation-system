@@ -1,7 +1,7 @@
 import pandas as pd
 import traceback
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response, json
 from pandas import json_normalize
 from pymongo import MongoClient
 from sklearn.model_selection import train_test_split
@@ -12,12 +12,15 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from flask_cors import CORS
 
 
 # Connect to MongoDB (replace with your MongoDB connection string)
 # client = MongoClient("mongodb://localhost:27017/")  # Local MongoDB instance
 client = MongoClient("mongodb+srv://longkai:Iy6D10VoSallC75q@cluster0.rr9xh0z.mongodb.net/bookings-app?retryWrites=true&w=majority")  
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+# CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 # or for cloud MongoDB (replace <username>, <password>, and <cluster_url>):
 # client = MongoClient("mongodb+srv://<username>:<password>@<cluster_url>")
 
@@ -66,6 +69,7 @@ start_location_df_tours.columns = ['startLocation_' + col for col in start_locat
 # Combine the flattened fields with the original DataFrame
 df_tours = df_tours.drop(columns=['locations', 'startLocation', 'startDates'])
 df_tours = pd.concat([df_tours, start_location_df_tours], axis=1)
+df_tours = df_tours.drop(columns=['__v'])
 
 # ------------------------------------EDIT DATA FOR POSTS-----------------------------
 df_posts['likes_count'] = df_posts['likes'].apply(len)
@@ -124,10 +128,11 @@ user_tour_matrix_df = user_tour_matrix_df.reset_index()
 # print(user_tour_matrix_df)
 
 def recommend_tours(user_id, num_recommendations=5):
+ 
     # Map user_id to an index
     # user_idx = interactions_df.index[interactions_df['userId'] == user_id].tolist()[0]
     # user_idx = df_users.index[df_users['_id'] == user_id].tolist()[0]
-
+    
     user_idx_list = user_tour_matrix_df.index[user_tour_matrix_df['userId'] == user_id].tolist()
 
     if not user_idx_list: 
@@ -157,8 +162,12 @@ def recommend():
         return jsonify({"error": "user_id parameter is required"}), 400
     try:
         recommendations = recommend_tours(user_id)
-        return jsonify({"recommendations": recommendations})
-    except IndexError as e:
+        
+        # return jsonify({"count": len(recommendations),"recommendations": recommendations})
+        response = make_response(json.dumps({"count": len(recommendations),"recommendations": recommendations}))
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    except (IndexError, ValueError) as e:
         traceback.print_exc()
         # return jsonify({"error": "Invalid user_id"}), 400
         return jsonify({"error": "Invalid user_id", "details": str(e)}), 400
