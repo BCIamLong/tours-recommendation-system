@@ -71,7 +71,7 @@ def train_collaborative_filtering(interactions_df):
 
 
 # ------------------------------------HYBRID RECOMMENDER FUNCTION------------------------------------
-def hybrid_recommendations(user_id, user_tour_matrix, collaborative_sim, content_sim, df_tours, num_recommendations=5, alpha=0.5):
+def hybrid_recommendations(user_id, user_tour_matrix, collaborative_sim, content_sim, df_tours, num_recommendations, alpha=0.5):
     """
     Generate hybrid recommendations by combining collaborative and content-based filtering.
     - `alpha` controls the weight between collaborative (0) and content-based (1).
@@ -93,6 +93,7 @@ def hybrid_recommendations(user_id, user_tour_matrix, collaborative_sim, content
         combined_score = (alpha * content_sim[tour_idx, :].sum()) + ((1 - alpha) * collab_score)
         combined_scores.append((tour_idx, combined_score))
 
+    
     # Sort by combined score
     combined_scores = sorted(combined_scores, key=lambda x: x[1], reverse=True)[:num_recommendations]
 

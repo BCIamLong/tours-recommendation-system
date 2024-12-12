@@ -56,10 +56,26 @@ def recommend():
 
         # Generate hybrid recommendations
         # user_id, user_tour_matrix, collaborative_sim, content_sim, df_tours
-        recommendations = hybrid_recommendations(user_id, user_tour_matrix, collaborative_sim, content_sim, df_tours)
+        # print(len(df_tours))
+        recommendations = hybrid_recommendations(user_id, user_tour_matrix, collaborative_sim, content_sim, df_tours, num_recommendations=len(df_tours))
         # recommendations = hybrid_recommendations(user_id, model_data, df_tours)
         # print(recommendations)
-        return jsonify({"count": len(recommendations), "recommendations": recommendations}), 200
+        df_recommendations = pd.DataFrame(recommendations)
+        final_recommendation_tours = pd.concat([df_recommendations, df_tours])
+        final_recommendation_tours = final_recommendation_tours.drop_duplicates(subset='_id', keep='first').reset_index(drop=True)
+        final_recommendation_tours = final_recommendation_tours.drop(columns=['__v'])
+
+        final_recommendation_tours_list = final_recommendation_tours.to_dict(orient='records')
+
+        for recommendation in final_recommendation_tours_list:
+            recommendation["_id"] = str(recommendation["_id"])
+            for date in recommendation["startDates"]:
+                date["_id"] = str(date["_id"])
+            for location in recommendation["locations"]:
+                location["_id"] = str(location["_id"])
+
+
+        return jsonify({"count": len(recommendations), "recommendations": final_recommendation_tours_list, "recommendations_core": recommendations}), 200
 
     except ValueError as e:
         traceback.print_exc()
