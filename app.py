@@ -1,13 +1,16 @@
 import pandas as pd
 import traceback
+import os
 
 from flask import Flask, request, jsonify, make_response, json
 from train import train
 from flask_cors import CORS
 from preprocess_data import load_model_data, load_data
+from config import config
+
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://tours-booking-api.onrender.com"]}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173",config['CLIENT_ORIGIN'], config['SERVER_ORIGIN']]}}, supports_credentials=True)
 
 @app.route('/train', methods=['GET'])
 def train_model():
