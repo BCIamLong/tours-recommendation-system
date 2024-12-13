@@ -46,6 +46,27 @@ def preprocess_tours(df_tours):
 
 def preprocess_posts(df_posts):
     """Preprocess post data."""
+    # Flatten the bookmarks column
+    df_post_bookmarks = pd.DataFrame([
+        {**bookmark, 'tourId': row['tourId']}  # Merge bookmark fields with the tourId
+        for _, row in df_posts.iterrows()
+        for bookmark in row['bookmarks']
+    ])
+    # df_post_bookmarks['bookmark_post'] = 1
+
+    # print(df_post_bookmarks.columns)
+    df_post_likes = pd.DataFrame([
+        {**like, 'tourId': row['tourId']}  # Merge bookmark fields with the tourId
+        for _, row in df_posts.iterrows()
+        for like in row['likes']
+    ])
+
+    df_post_comments = pd.DataFrame([
+        {**comment, 'tourId': row['tourId']}  # Merge bookmark fields with the tourId
+        for _, row in df_posts.iterrows()
+        for comment in row['comments']
+    ])
+
     df_posts['likes_count'] = df_posts['likes'].apply(len)
     df_posts['comments_count'] = df_posts['comments'].apply(len)
     df_posts['saved_count'] = df_posts['bookmarks'].apply(len)
@@ -55,26 +76,40 @@ def preprocess_posts(df_posts):
     # df_posts = df_posts.loc[:, ['_id', 'userId', 'tourId', 'title', 'description', 'images', 'shares', 'likes_count', 'comments_count', 'saved_count']]
     df_posts.rename(columns={'_id': 'post_id'}, inplace=True)   
     # print(df_posts.dtypes) 
-    return df_posts
+    return df_posts,df_post_bookmarks,df_post_likes,df_post_comments
 
 
-def preprocess_interactions(df_reviews, df_bookmarks, df_posts):
+def preprocess_interactions(df_reviews, df_bookmarks, df_posts,df_post_bookmarks,df_post_likes,df_post_comments):
     """Create and aggregate user-tour interactions."""
+    df_post_bookmarks.rename(columns={'_id': 'bookmark_post_id'}, inplace=True)
+    df_post_bookmarks['bookmark_post'] = 1
+
+    df_post_likes.rename(columns={'_id': 'like_post_id'}, inplace=True)
+    df_post_likes['like_post'] = 1
+
+    df_post_comments.rename(columns={'_id': 'comment_post_id'}, inplace=True)
+    df_post_comments['comment_post'] = 1
+
     df_bookmarks.rename(columns={'_id': 'bookmark_id', 'user': 'userId', 'cabin': 'tourId'}, inplace=True)
     df_bookmarks['bookmark'] = 1
     
     df_reviews.rename(columns={'_id': 'review_id', 'user': 'userId', 'cabin': 'tourId'}, inplace=True)
     df_reviews['review'] = 1
     
-    interactions = pd.concat([df_reviews, df_bookmarks, df_posts], ignore_index=True)
+    interactions = pd.concat([df_reviews, df_bookmarks, df_posts, df_post_bookmarks, df_post_likes, df_post_comments], ignore_index=True)
     interactions = interactions.groupby(['userId', 'tourId']).agg({
         'rating': 'sum',
         'bookmark': 'sum',
         'review': 'sum',
-        'likes_count': 'sum',
-        'comments_count': 'sum',
-        'saved_count': 'sum'
+        'bookmark_post': 'sum',
+        'like_post': 'sum',
+        'comment_post': 'sum',
+        # 'comments_count': 'sum',
+        # 'likes_count': 'sum',
+        # 'saved_count': 'sum'
     }).reset_index().fillna(0)
+    # df_selected = interactions[['userId','tourId', 'bookmark']]
+    # print(df_selected)
     # print(interactions.dtypes) 
     # interactions['userId'] = interactions['userId'].astype('category').cat.codes 
     # interactions['tourId'] = interactions['tourId'].astype('category').cat.codes
@@ -84,13 +119,12 @@ def preprocess_interactions(df_reviews, df_bookmarks, df_posts):
 
 
 
-def save_model_data(file_path, user_tour_matrix, collaborative_sim, content_sim):
+def save_model_data(file_path, hybrid_scores, user_item_matrix):
     """Save trained matrices and other model data to a file."""
     with open(file_path, 'wb') as file:
         pickle.dump({
-            "user_tour_matrix": user_tour_matrix,
-            "collaborative_sim": collaborative_sim,
-            "content_sim": content_sim
+            "hybrid_scores": hybrid_scores,
+            "user_item_matrix": user_item_matrix,
         }, file)
     print(f"Model data saved to {file_path}")
 
@@ -100,5 +134,5 @@ def load_model_data(file_path):
     with open(file_path, 'rb') as file:
         data = pickle.load(file)
     print(f"Model data loaded from {file_path}")
-    return data['user_tour_matrix'], data['collaborative_sim'], data['content_sim']
+    return data['hybrid_scores'], data['user_item_matrix']
     # return data
