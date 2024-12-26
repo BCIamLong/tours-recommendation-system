@@ -1,6 +1,6 @@
 import numpy as np
 
-from content_based import content_based
+from content_based import content_based, content_based_for_tours
 from collaborative_filtering import collaborative_filtering
 from preprocess_data import load_data,preprocess_tours,preprocess_posts, preprocess_interactions, save_model_data, load_model_data
 from hybrid_recommends import hybrid_recommends
@@ -45,7 +45,8 @@ def train():
     values='weighted_score',
     fill_value=0
     )
-
+    
+    tour_similarities_matrix = content_based_for_tours(df_tours=df_tours)
     tour_ids = df_tours['_id'].tolist()
     user_tour_matrix = user_tour_matrix.reindex(columns=tour_ids, fill_value=0)
 
@@ -58,4 +59,4 @@ def train():
 
     hybrid_scores = hybrid_recommends(cf_predictions, cbf_predictions)
 
-    save_model_data('train_data.pkl',  hybrid_scores, user_item_matrix)
+    save_model_data('train_data.pkl',  hybrid_scores, user_item_matrix, tour_similarities_matrix)

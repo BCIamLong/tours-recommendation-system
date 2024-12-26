@@ -119,12 +119,13 @@ def preprocess_interactions(df_reviews, df_bookmarks, df_posts,df_post_bookmarks
 
 
 
-def save_model_data(file_path, hybrid_scores, user_item_matrix):
+def save_model_data(file_path, hybrid_scores, user_item_matrix, tour_similarities_matrix):
     """Save trained matrices and other model data to a file."""
     with open(file_path, 'wb') as file:
         pickle.dump({
             "hybrid_scores": hybrid_scores,
             "user_item_matrix": user_item_matrix,
+            "tour_similarities_matrix": tour_similarities_matrix
         }, file)
     print(f"Model data saved to {file_path}")
 
@@ -134,5 +135,5 @@ def load_model_data(file_path):
     with open(file_path, 'rb') as file:
         data = pickle.load(file)
     print(f"Model data loaded from {file_path}")
-    return data['hybrid_scores'], data['user_item_matrix']
+    return data['hybrid_scores'], data['user_item_matrix'], data['tour_similarities_matrix']
     # return data
