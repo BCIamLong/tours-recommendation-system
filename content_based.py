@@ -76,7 +76,9 @@ def search_tours(search_query, df_tours, top_n=5):
     
     # Rank tours by similarity scores
     df_tours['Similarity Score'] = similarity_scores
-    matching_tours = df_tours.sort_values(by='Similarity Score', ascending=False).head(top_n)
+    df_tours_filtered = df_tours[df_tours['Similarity Score'] > 0]
+    # print(df_tours[['_id', 'name', 'Similarity Score']])
+    matching_tours = df_tours_filtered.sort_values(by='Similarity Score', ascending=False).head(top_n)
     
     return matching_tours, matching_tours[['name']]
 
@@ -100,6 +102,9 @@ def search_posts(search_query, df_posts, top_n=5):
     
     # Rank tours by similarity scores
     df_posts['Similarity Score'] = similarity_scores
-    matching_posts = df_posts.sort_values(by='Similarity Score', ascending=False).head(top_n)
+    df_posts_filtered = df_posts[df_posts['Similarity Score'] > 0]
+    # print(df_posts[['_id', 'images', 'Similarity Score']])
+    matching_posts = df_posts_filtered.sort_values(by='Similarity Score', ascending=False).head(top_n)
     
-    return matching_posts[['_id', 'title']]
+    return matching_posts[['_id', 'title', 'images']]
+    # return matching_posts[['_id', 'title']]
